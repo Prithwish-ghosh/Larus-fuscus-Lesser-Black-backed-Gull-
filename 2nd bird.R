@@ -3,7 +3,7 @@ library(circular)
 options(rgl.useNULL = TRUE)
 library(Directional)
 setwd("~/Downloads")
-dataset = read.csv(file.choose())
+dataset = read.csv("D:/Downloads/migration_original.csv")
 head(dataset)
 Mig_bird = data.frame(dataset)
 head(Mig_bird)
@@ -111,6 +111,9 @@ head(z)
 Mig_B$zenith =  z[,1]
 Mig_B$azimuth = z[,2]
 
+
+
+
 data = data.frame(date = Mig_B$date, lat = Mig_B$location.lat , lon = Mig_B$location.long)
 
 z = suncalc::getMoonPosition(data = data,  keep = c("altitude", "azimuth"))
@@ -129,9 +132,12 @@ Mig_B$date <- as.Date(Mig_B$date)
 # Split the data frame by month
 result <- split(Mig_B, format(Mig_B$date, "%Y-%m"))
 
+
+
 summary(result[[76]])
 
-d1 = rbind(result[[1]], result[[2]], result[[3]], result[[4]])
+d1 = rbind(result[[1]], result[[2]])
+d111 =rbind( result[[3]], result[[4]])
 d2 = rbind(result[[5]], result[[6]])
 d22= rbind(result[[7]], result[[8]])
 dim(d2)
@@ -161,6 +167,9 @@ dim(d3)
 fit1 = lm.circular(d1$theta, d1$zenith)
 fit11 = lm.circular(d1$theta, d1$azimuth)
 f1 =lm.circular(d1$theta , d1$Moon_azimuth)
+
+anova(fit11, f1)
+library(CircStats)
 
 fit2 = lm.circular(d2$theta, d2$zenith)
 fit22 = lm.circular(d2$theta, d2$azimuth)
@@ -284,8 +293,8 @@ library(maps)
 world_coordinates = map_data("world")
 northern_map <- subset(world_coordinates, long >0)
 northern_map1 <- subset(northern_map , long <60)
-northern_map2 <- subset(northern_map1 , lat >= -15)
-northern_map3 <- subset(northern_map2 , lat <= 75)
+northern_map2 <- subset(northern_map1 , lat >= -20)
+northern_map7 <- subset(northern_map2 , lat <= 75)
 
 
  ggplot()+
@@ -338,7 +347,96 @@ fishkent(u)
 
 b.dens
 
+sample_size = 15000
+sampled_data <- Mig_B[sample(nrow(Mig_B), sample_size, replace = F),]
+
+Mig_b = Mig_B[580:594,]
+dim(Mig_b)
+
+for (i in 1:15) {
+  Mig_b$Moon_azimuth[i] = Mig_b$Moon_azimuth[i+1] - Mig_b$Moon_azimuth[i]
+}
+
+Mig_b$Moon_azimuth
+
+
+library(SpatialVx)
+library(cowplot)
+
+plot <- ggplot() +
+  geom_polygon(data = northern_map7, aes(x = long, y = lat, group = group), fill = "white", color = "black") +
+  geom_segment(data = Mig_b,
+               aes(x = Mig_b$location.long, y = Mig_b$location.lat,
+                   xend = Mig_b$location.long + sin(Mig_b$theta * pi/180),
+                   yend = Mig_b$location.lat + cos(Mig_b$theta * pi/180),
+                   color = "blue"),
+               arrow = arrow(length = unit(0.4, "cm"), type = "open", ends = "last"), 
+               size = 1.2, color = "blue") +
+  geom_segment(data = Mig_b,
+               aes(x = Mig_b$location.long, y = Mig_b$location.lat,
+                   xend = Mig_b$location.long + sin(Mig_b$azimuth * pi/180),
+                   yend = Mig_b$location.lat + cos(Mig_b$azimuth * pi/180),
+                   color = "#EA782D"),
+               arrow = arrow(length = unit(0.4, "cm"), type = "open", ends = "last"), 
+               size = 1.2, color = "#EA782D") +
+  geom_path(data = Mig_b,
+               aes(x = Mig_b$location.long, y = Mig_b$location.lat, xend = Mig_b$location.long + 
+                     sin(Mig_b$theta * pi/180),
+                   yend = Mig_b$location.lat + cos(theta * pi/180),
+                   color = "green"),
+               arrow = arrow(length = unit(0.45, "cm"), type = "closed", ends = "last"),
+            size = 1.5 , col= "green", linetype 
+            = "dotted") +
+  theme_map() +
+  labs(color = "Bird Direction", ) +
+  theme(legend.position = "bottom")
+print(plot)
+
+
 file = "density.csv"
 write.csv(b.dens, file = file, row.names = F)
 file = "Mig_B.csv"
 write.csv(Mig_B, file = file, row.names = F)
+
+
+summary(Mig_B$theta)
+
+
+plot <- ggplot() +
+  geom_polygon(data = northern_map7, aes(x = long, y = lat, group = group), fill = "white", color = "black") +
+  geom_segment(data = Mig_B,
+               aes(x = Mig_B$location.long, y = Mig_B$location.lat,
+                   xend = Mig_B$location.long + sin(Mig_B$theta * pi/180),
+                   yend = Mig_B$location.lat + cos(Mig_B$theta * pi/180),
+                   color = "blue"),
+               arrow = arrow(length = unit(0.2, "cm"), type = "open", ends = "last"), 
+               size = 0.5, color = "blue") +
+  theme_map() +
+  labs(color = "Bird Direction", ) +
+  theme(legend.position = "bottom")
+print(plot)
+
+plot <- ggplot() +
+  geom_polygon(data = northern_map7, aes(x = long, y = lat, group = group), fill = "white", color = "black") +
+  geom_segment(data = Mig_B,
+               aes(x = Mig_B$location.long, y = Mig_B$location.lat,
+                   xend = Mig_B$location.long + sin(Mig_B$theta * pi/180),
+                   yend = Mig_B$location.lat + cos(Mig_B$theta * pi/180),
+                   color = "blue"),
+               arrow = arrow(length = unit(0.2, "cm"), type = "open", ends = "last"),
+               size = 0.5, color = "blue") +
+  geom_point(data = Mig_b, aes(x = location.long, y = location.lat), size = 5, 
+             color = "red", shape = 19) + # Add this line
+  
+  geom_path(data = Mig_b,
+            aes(x = Mig_b$location.long, y = Mig_b$location.lat, xend = Mig_b$location.long + 
+                  sin(Mig_b$theta * pi/180),
+                yend = Mig_b$location.lat + cos(theta * pi/180),
+                color = "green"),
+            arrow = arrow(length = unit(0.5, "cm"), type = "closed", ends = "last"),
+            size = 1.7 , col= "green") +
+  theme_map() +
+  labs(color = "Bird Direction") +
+  theme(legend.position = "bottom")
+
+plot
